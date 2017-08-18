@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"bytes"
+	"os"
 
 	"frank/src/go/helpers/log"
 
@@ -22,23 +23,23 @@ func StartRecord(killChannel chan bool) (string, error){
 	go func() {
 		done <- cmd.Wait()
 	}()
-	log.Log.Critical("Select")
+
 	select {
-	case state := <-killChannel:
-		log.Log.Critical("IT IS KILLED", state)
+	case <-killChannel:
 		if err := cmd.Process.Kill(); err != nil {
 				return fileName, err
 		}
+		_ = os.Remove(fileName)
+		
 		return "", nil
 	case err := <-done:
-		log.Log.Critical("IT IS DONE", err)
 		if err != nil {
-				return fileName, err
+			log.Log.Critical("[" + fileName+ "]", err)
+			return fileName, err
 		} else {
-				log.Log.Info("[" + fileName+ "] received voice")
-				return fileName, nil
+			log.Log.Info("[" + fileName+ "] received voice")
+			return fileName, nil
 		}
 	}
-	log.Log.Critical("After Select")
 	return fileName, nil
 }

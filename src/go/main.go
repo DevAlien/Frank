@@ -38,6 +38,40 @@ func main() {
 	fc, _ := controller.NewFrankController()
 	fc.Start()
 }
+
+func mainQQ() {
+				i := 0
+				gobot.Every(1*time.Second, func() {
+					if i == 1 {
+						i = 0
+					} else {
+						i = 1
+					}
+					firmataAdaptor := firmata.NewTCPAdaptor("192.168.1.7:3030")
+					_ = firmataAdaptor.Connect()
+					fmt.Println("change", i)
+					firmataAdaptor.DigitalWrite("12", byte(i))
+				})
+        // led := gpio.NewLedDriver(firmataAdaptor, "12")
+
+        // work := func() {
+        //         gobot.Every(5*time.Second, func() {
+				// 					fmt.Println("toggling")
+        //                 led.Toggle()
+        //         })
+        // }
+
+        // robot := gobot.NewRobot("bot",
+        //         []gobot.Connection{firmataAdaptor},
+        //         []gobot.Device{led},
+        //         work,
+        // )
+
+				// robot.Start()
+				var input string
+	fmt.Scanln(&input)
+}
+
 // func main2d() {
 // 	voiceRecognition, _ := services.NewVoiceRecognition(developerKey)
 // 	fileName, _ := services.StartRecord()

@@ -18,7 +18,7 @@ const (
     Running = 2
 )
 
-const timeout = 10 * time.Second
+const timeout = 60 * time.Second
 
 
 type FrankController struct {
@@ -31,6 +31,9 @@ type FrankController struct {
 	killCh chan bool
 }
 
+func cazz() {
+	      
+}
 func NewFrankController() (FrankController, error){
 	frankController := FrankController{}
 	log.InitLogger()
@@ -57,14 +60,14 @@ func (fc *FrankController) Start() {
 	go fc.StartKeywordRecognition()
 
 	var input string
-  fmt.Scanln(&input)
+	fmt.Scanln(&input)
 }
 
 func (fc *FrankController) VoiceRecognitionToText(fileName string) {
 	log.Log.Debugf("[%s] Analyzing Audio", fileName)
 	text := fc.VoiceRecognition.AnalyzeAudio(fileName)
-	_ = os.Remove(fileName)
-
+	err := os.Remove(fileName)
+	log.Log.Critical(err)
 	log.Log.Debugf("[%s] Found Text: %s", fileName, text)
 	fc.CheckDeactivation(fileName, text)
 }
@@ -85,7 +88,6 @@ func (fc *FrankController) CheckDeactivation(fileName string, text string) {
 func (fc *FrankController) StopVoiceRecognition() {
 	log.Log.Debug("Stopping Voice Recognition And starting Keyword Recognition")
 	fc.killCh <- true
-	log.Log.Critical("run killCh")
 	fc.voiceCh <- Stopped
 	fc.keywordCh <- Running
 }
@@ -115,6 +117,9 @@ func (fc *FrankController) StartVoiceRecognition() {
 				}
 				log.Log.Info("Listening Voice")
 				fileName, _ := services.StartRecord(fc.killCh)
+				if fileName == "" {
+					break
+				}
 				go fc.VoiceRecognitionToText(fileName)
       }
     }
@@ -141,6 +146,9 @@ func (fc *FrankController) StartKeywordRecognition() {
 
 				log.Log.Info("Listening Keyword")
 				fileName, _ := services.StartRecord(fc.killCh)
+				if fileName == "" {
+					break
+				}
 				result := services.KeywordRecognition(fileName)
 				_ = os.Remove(fileName)
 				if result == true {
