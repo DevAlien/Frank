@@ -27,13 +27,10 @@ func KeywordRecognition(fileName string) bool{
 	ptr := snowboydetect.SwigcptrInt16_t(unsafe.Pointer(&dat[0]))
 	res := detector.RunDetection(ptr, len(dat) / 2 /* len of int16  */)
 	if res == -2 {
-		fmt.Println("Snowboy detected silence")
 		return false
 	} else if res == -1 {
-		fmt.Println("Snowboy detection returned error")
 		return false
 	} else if res == 0 {
-		fmt.Println("Snowboy detected nothing")
 		return false
 	} else {
 		fmt.Println("Snowboy detected keyword ", res)

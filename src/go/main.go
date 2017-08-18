@@ -6,13 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
-	"os"
 	"bytes"
 	"io/ioutil"
 	"encoding/base64"
 	"unsafe"
 	
-	"frank/src/go/services"
 	"frank/src/go/controller"
 
 	"github.com/satori/go.uuid"
@@ -40,13 +38,13 @@ func main() {
 	fc, _ := controller.NewFrankController()
 	fc.Start()
 }
-func main2d() {
-	voiceRecognition, _ := services.NewVoiceRecognition(developerKey)
-	fileName, _ := services.StartRecord()
-	text := voiceRecognition.AnalyzeAudio(fileName)
-	_ = os.Remove(fileName)
-	fmt.Println("[" + fileName+ "] Text: ", text)
-}
+// func main2d() {
+// 	voiceRecognition, _ := services.NewVoiceRecognition(developerKey)
+// 	fileName, _ := services.StartRecord()
+// 	text := voiceRecognition.AnalyzeAudio(fileName)
+// 	_ = os.Remove(fileName)
+// 	fmt.Println("[" + fileName+ "] Text: ", text)
+// }
 
 func mainq() {
 	fileName := fmt.Sprintf("%s.flac", uuid.NewV4())

@@ -1,0 +1,46 @@
+{
+  "name": "Frank The Bot",
+  "configs": {
+    "google_api_key": "AIzaSyBEsKHzV5PkHUhvEOKjYfefv7_tkZ8EREs"
+  },
+  "deactivation": ["spegniti", "stai zitto", "stai zitto quando parli con me"],
+  "devices": [{
+    "name": "livingroom-light",
+    "type": "arduino",
+    "connection": {
+      "type": "serial",
+      "address": "/dev/ard123"
+    },
+    "interfaces": [{
+      "name": "blueled",
+      "driver": "led",
+      "pin": "13"
+    }]
+    }],
+    "commands": [{
+      "name": "Livinglight on",
+      "commands": ["accendi la luce della sala", "accendi la sala", "accendi la luce del salotto", "illumina la sala"],
+      "actions": [{
+        "device": "livingroom-light",
+        "interface": "blueled",
+        "action": "on"
+      }]
+      }, {
+      "name": "light off",
+      "commands": ["spegni la luce della sala", "spegni la sala", "spegni la luce del salotto"],
+      "actions": [{
+        "device": "livingroom-light",
+        "interface": "blueled",
+        "action": "off"
+      }]
+    }, {
+      "name": "start music",
+      "commands": ["musica anni {anni}"],
+      "actions": [{
+        "device": "radio",
+        "interface": "bla",
+        "action": "start radio {anni}"
+      }]
+    }
+    ]
+}

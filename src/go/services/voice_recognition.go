@@ -1,12 +1,13 @@
 package services
 
 import (
-	"fmt"
-	"log"
 	"time"
 	"net/http"
 	"io/ioutil"
 	"encoding/base64"
+	"strings"
+	
+	"frank/src/go/helpers/log"
 
 	"google.golang.org/api/googleapi/transport"
 	"google.golang.org/api/language/v1"
@@ -54,18 +55,18 @@ func (vr *VoiceRecognition) AnalyzeAudio(file string) string {
 	start := time.Now()
 	text, err := vr.sendAudioToGoogle(file)
 	if err != nil {
-		log.Println("Error sending audio to google:", err)
+		log.Log.Error("Error sending audio to google:", err)
 	}
 
 	err = vr.parseText(text, file)
 	if err != nil {
-		log.Println("Error parsing text:", err)
+		log.Log.Error("Error parsing text:", err)
 	}
 
 	elapsed := time.Since(start)
-  log.Println("[" + file + "] to get analysis", elapsed)
+  log.Log.Debug("[" + file + "] to get analysis", elapsed)
 
-	return text
+	return strings.ToLower(text)
 }
 
 func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
@@ -100,7 +101,7 @@ func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
 	for _, result := range response.Results {
 		for _, alt := range result.Alternatives {
 			text = alt.Transcript
-			fmt.Println("[" + file + "]", alt.Transcript, alt.Confidence)
+			//fmt.Println("[" + file + "]", alt.Transcript, alt.Confidence)
 		}
 	}
 
@@ -122,10 +123,9 @@ func (vr *VoiceRecognition) parseText(text string, file string) error {
 	if err != nil {
 		return err
 	}
-	b, err := response.MarshalJSON()
-	fmt.Println(string(b))
+
 	for _, token := range response.Tokens {
-		fmt.Println("[" + file + "]", token.Text.Content, "->", token.Lemma, "=>", token.PartOfSpeech.Tag, token.PartOfSpeech.Form)
+		log.Log.Debug("[" + file + "]", token.Text.Content, "->", token.Lemma, "=>", token.PartOfSpeech.Tag, token.PartOfSpeech.Form)
 	}
 
 	return nil
