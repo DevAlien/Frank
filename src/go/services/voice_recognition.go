@@ -92,7 +92,7 @@ func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
 		Audio:  &recognitionAudio,
 		Config: &recognitionConfig,
 	}
-	log.Log.Warning(vr.SpeechService)
+
 	c := vr.SpeechService.Speech.Recognize(&recognizeRequest)
 	response, err := c.Do()
 	if err != nil {

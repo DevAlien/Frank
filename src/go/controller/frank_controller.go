@@ -37,7 +37,6 @@ func NewFrankController() (FrankController, error) {
 	frankController := FrankController{}
 	log.InitLogger()
 	c, err := managers.GetConfig(helpers.ConfigDir)
-	log.Log.Error(err)
 	if err != nil {
 		return frankController, err
 	}
@@ -45,7 +44,6 @@ func NewFrankController() (FrankController, error) {
 	frankController.Config = c
 
 	voiceRecognition, err := services.NewVoiceRecognition(frankController.Config.Get("google_api_key"))
-	log.Log.Debug(err)
 	frankController.VoiceRecognition = voiceRecognition
 
 	return frankController, nil

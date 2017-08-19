@@ -83,32 +83,5 @@ func ParseConfig(input []byte) (Config, error) {
 		}
 	}
 
-	fmt.Printf("%+v\n", config.NamedDevices)
 	return config, nil
 }
-
-// func main() {
-// 	// our target will be of type map[string]interface{}, which is a pretty generic type
-// 	// that will give us a hashtable whose keys are strings, and whose values are of
-// 	// type interface{}
-// 	var val map[string]interface{}
-// 	var config ConfigManager
-// 	cM := ConfigManager{}
-
-// 	if err := json.Unmarshal([]byte(input), &config); err != nil {
-// 		panic(err)
-// 	}
-
-// 	fmt.Printf("%+v\n", config)
-// 	if err := json.Unmarshal([]byte(input), &val); err != nil {
-// 		panic(err)
-// 	}
-
-// 	fmt.Println(val)
-// 	cM.Configs = val["configs"].(map[string]interface{})
-// 	fmt.Println(cM.Configs["google_api_key"].(string))
-// 	for k, v := range val {
-
-// 		fmt.Println(k, reflect.TypeOf(v))
-// 	}
-// }

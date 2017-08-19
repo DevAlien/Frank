@@ -15,6 +15,7 @@ import (
 func StartRecord(killChannel chan bool) (string, error) {
 	fileName := fmt.Sprintf("%s.flac", uuid.NewV4())
 	log.Log.Info("[" + fileName + "] listening...")
+
 	dirFile := helpers.GetRecordPath(fileName)
 	cmd := exec.Command("rec", "-r", "16000", "-c", "1", dirFile, "silence", "-l", "1", "0.5", "0.1%", "1", "1.0", "0.1%")
 	var out bytes.Buffer
