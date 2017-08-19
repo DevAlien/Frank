@@ -1,12 +1,13 @@
 package services
 
 import (
-	"time"
-	"net/http"
-	"io/ioutil"
 	"encoding/base64"
+	"io/ioutil"
+	"net/http"
 	"strings"
-	
+	"time"
+
+	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
 
 	"google.golang.org/api/googleapi/transport"
@@ -15,7 +16,7 @@ import (
 )
 
 type VoiceRecognition struct {
-	SpeechService *speech.Service
+	SpeechService   *speech.Service
 	LanguageService *language.Service
 }
 
@@ -58,13 +59,13 @@ func (vr *VoiceRecognition) AnalyzeAudio(file string) string {
 		log.Log.Error("Error sending audio to google:", err)
 	}
 
-	err = vr.parseText(text, file)
-	if err != nil {
-		log.Log.Error("Error parsing text:", err)
-	}
+	// err = vr.parseText(text, file)
+	// if err != nil {
+	// 	log.Log.Error("Error parsing text:", err)
+	// }
 
 	elapsed := time.Since(start)
-  log.Log.Debug("[" + file + "] to get analysis", elapsed)
+	log.Log.Debug("["+file+"] to get analysis", elapsed)
 
 	return strings.ToLower(text)
 }
@@ -72,7 +73,7 @@ func (vr *VoiceRecognition) AnalyzeAudio(file string) string {
 func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
 	var text string
 
-	file64, err := Encode("./" + file)
+	file64, err := Encode(helpers.GetRecordPath(file))
 	if err != nil {
 		return text, err
 	}
@@ -82,16 +83,16 @@ func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
 	}
 
 	recognitionConfig := speech.RecognitionConfig{
-		LanguageCode: "it-IT",
-		Encoding: "FLAC",
+		LanguageCode:    "it-IT",
+		Encoding:        "FLAC",
 		SampleRateHertz: 16000,
 	}
 
 	recognizeRequest := speech.RecognizeRequest{
-		Audio: &recognitionAudio,
+		Audio:  &recognitionAudio,
 		Config: &recognitionConfig,
 	}
-
+	log.Log.Warning(vr.SpeechService)
 	c := vr.SpeechService.Speech.Recognize(&recognizeRequest)
 	response, err := c.Do()
 	if err != nil {
@@ -110,9 +111,9 @@ func (vr *VoiceRecognition) sendAudioToGoogle(file string) (string, error) {
 
 func (vr *VoiceRecognition) parseText(text string, file string) error {
 	document := language.Document{
-		Content: text,
+		Content:  text,
 		Language: "it",
-		Type: "PLAIN_TEXT",
+		Type:     "PLAIN_TEXT",
 	}
 	asr := language.AnalyzeSyntaxRequest{
 		Document: &document,
@@ -125,7 +126,7 @@ func (vr *VoiceRecognition) parseText(text string, file string) error {
 	}
 
 	for _, token := range response.Tokens {
-		log.Log.Debug("[" + file + "]", token.Text.Content, "->", token.Lemma, "=>", token.PartOfSpeech.Tag, token.PartOfSpeech.Form)
+		log.Log.Debug("["+file+"]", token.Text.Content, "->", token.Lemma, "=>", token.PartOfSpeech.Tag, token.PartOfSpeech.Form)
 	}
 
 	return nil

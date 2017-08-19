@@ -6,15 +6,24 @@
   "deactivation": ["spegniti", "stai zitto", "stai zitto quando parli con me"],
   "devices": [{
     "name": "livingroom-light",
-    "type": "arduino",
+    "type": "firmata",
     "connection": {
-      "type": "serial",
-      "address": "/dev/ard123"
+      "type": "tcp",
+      "address": "192.168.1.7:3030"
     },
     "interfaces": [{
       "name": "blueled",
       "driver": "led",
-      "pin": "13"
+      "pin": "12"
+      
+    },{
+      "name": "greenled",
+      "driver": "led",
+      "pin": "14"
+    }, {
+      "name": "whiteled",
+      "driver": "led",
+      "pin": "2"
     }]
     }],
     "commands": [{
@@ -40,6 +49,34 @@
         "device": "radio",
         "interface": "bla",
         "action": "start radio {anni}"
+      }]
+    }, {
+      "name": "light off Special",
+      "commands": ["spegni la luce {colore}"],
+      "actions": [{
+        "device": "livingroom-light",
+        "matchingInterface": {
+          "colore": {
+            "blu": "blueled",
+            "verde": "greenled",
+            "bianca": "whiteled"
+          }
+        },
+        "action": "off"
+      }]
+    }, {
+      "name": "light on Special",
+      "commands": ["accendi la luce {colore}"],
+      "actions": [{
+        "device": "livingroom-light",
+        "matchingInterface": {
+          "colore": {
+            "blu": "blueled",
+            "verde": "greenled",
+            "bianca": "whiteled"
+          }
+        },
+        "action": "on"
       }]
     }
     ]

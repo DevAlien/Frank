@@ -3,48 +3,49 @@ package controller
 import (
 	"fmt"
 	"runtime"
-	"os"
 	"time"
 
-	"frank/src/go/services"
-	"frank/src/go/managers"
+	"frank/src/go/devices"
+	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
+	"frank/src/go/managers"
+	"frank/src/go/services"
 )
 
 const developerKey = "AIzaSyBEsKHzV5PkHUhvEOKjYfefv7_tkZ8EREs"
 const (
-    Stopped = 0
-    Paused  = 1
-    Running = 2
+	Stopped = 0
+	Paused  = 1
+	Running = 2
 )
 
 const timeout = 60 * time.Second
 
-
 type FrankController struct {
 	VoiceRecognition services.VoiceRecognition
-	Config managers.Config
+	Config           managers.Config
 
-	timer *time.Timer
+	timer     *time.Timer
 	keywordCh chan int
-	voiceCh chan int
-	killCh chan bool
+	voiceCh   chan int
+	killCh    chan bool
 }
 
-func cazz() {
-	      
-}
-func NewFrankController() (FrankController, error){
+func NewFrankController() (FrankController, error) {
+	helpers.LoadDirs()
+
 	frankController := FrankController{}
 	log.InitLogger()
-	c, err := managers.GetConfig("config.json")
+	c, err := managers.GetConfig(helpers.ConfigDir)
+	log.Log.Error(err)
 	if err != nil {
 		return frankController, err
 	}
-	
+
 	frankController.Config = c
 
-	voiceRecognition, _ := services.NewVoiceRecognition(frankController.Config.Get("google_api_key"))
+	voiceRecognition, err := services.NewVoiceRecognition(frankController.Config.Get("google_api_key"))
+	log.Log.Debug(err)
 	frankController.VoiceRecognition = voiceRecognition
 
 	return frankController, nil
@@ -64,11 +65,15 @@ func (fc *FrankController) Start() {
 }
 
 func (fc *FrankController) VoiceRecognitionToText(fileName string) {
+	fmt.Printf("#goroutines: %d\n", runtime.NumGoroutine())
 	log.Log.Debugf("[%s] Analyzing Audio", fileName)
 	text := fc.VoiceRecognition.AnalyzeAudio(fileName)
-	err := os.Remove(fileName)
-	log.Log.Critical(err)
+
+	helpers.RemoveRecordFile(fileName)
+
 	log.Log.Debugf("[%s] Found Text: %s", fileName, text)
+	commands := services.CheckCommands(text, fc.Config.Commands)
+	go devices.ManageCommands(commands, &fc.Config)
 	fc.CheckDeactivation(fileName, text)
 }
 
@@ -76,9 +81,9 @@ func (fc *FrankController) CheckDeactivation(fileName string, text string) {
 	log.Log.Debugf("[%s] Checking Deactivation Keywords", fileName)
 
 	for _, sentence := range fc.Config.Deactivation {
-    if sentence == text {
+		if sentence == text {
 			log.Log.Infof("[%s] Deactivation Keyword Found", fileName)
-			fc.StopVoiceRecognition();
+			fc.StopVoiceRecognition()
 			return
 		}
 	}
@@ -97,71 +102,72 @@ func (fc *FrankController) StartVoiceRecognition() {
 	log.Log.Debug("Started timeout to deactivate voice recognition")
 	fc.timer = time.AfterFunc(timeout, fc.StopVoiceRecognition)
 	for {
-      select {
-      case state = <- fc.voiceCh:
-        switch state {
-				case Stopped:
-						log.Log.Info("Stopped Voice Recognition")
-						fc.keywordCh <- Running
-						return
-				case Running:
-						log.Log.Info("Started Voice Recognition")
-				case Paused:
-						log.Log.Info("Paused Voice Recognition")
-				}
-			default:
-				runtime.Gosched()
-				if state == Paused {
-					log.Log.Info("Paused Voice Recognition")
-					break
-				}
-				log.Log.Info("Listening Voice")
-				fileName, _ := services.StartRecord(fc.killCh)
-				if fileName == "" {
-					break
-				}
-				go fc.VoiceRecognitionToText(fileName)
-      }
-    }
+		select {
+		case state = <-fc.voiceCh:
+			switch state {
+			case Stopped:
+				log.Log.Info("Stopped Voice Recognition")
+				fc.keywordCh <- Running
+				return
+			case Running:
+				log.Log.Info("Started Voice Recognition")
+			case Paused:
+				log.Log.Info("Paused Voice Recognition")
+			}
+		default:
+			if state == Paused {
+				time.Sleep(1 * time.Second)
+				break
+			}
+			log.Log.Info("Listening Voice")
+			fileName, _ := services.StartRecord(fc.killCh)
+			if fileName == "" {
+				break
+			}
+			go fc.VoiceRecognitionToText(fileName)
+		}
+	}
 }
 func (fc *FrankController) StartKeywordRecognition() {
 	state := Running
 	for {
-      select {
-      case state = <- fc.keywordCh:
-        switch state {
-				case Stopped:
-						log.Log.Info("Stopped Keyword Recognition")
-						return
-				case Running:
-						log.Log.Info("Started Keyword Recognition")
-				case Paused:
-						log.Log.Info("Paused Keyword Recognition")
-				}
-			default:
-				runtime.Gosched()
-				if state == Paused {
-						break
-				}
+		select {
+		case state = <-fc.keywordCh:
+			switch state {
+			case Stopped:
+				log.Log.Info("Stopped Keyword Recognition")
+				return
+			case Running:
+				log.Log.Info("Started Keyword Recognition")
+			case Paused:
+				log.Log.Info("Paused Keyword Recognition")
+			}
+		default:
+			if state == Paused {
+				time.Sleep(1 * time.Second)
+				break
+			}
 
-				log.Log.Info("Listening Keyword")
-				fileName, _ := services.StartRecord(fc.killCh)
-				if fileName == "" {
-					break
-				}
-				result := services.KeywordRecognition(fileName)
-				_ = os.Remove(fileName)
-				if result == true {
-					log.Log.Debug("Keyword matched")
-					go fc.StartVoiceRecognition()
-					state = Paused
-					break
-				} else {
-					log.Log.Debug("Keyword not matched")
-					go fc.StartVoiceRecognition()
-					state = Paused
-					break
-				}
-      }
-    }
+			log.Log.Info("Listening Keyword")
+			fileName, _ := services.StartRecord(fc.killCh)
+			if fileName == "" {
+				break
+			}
+
+			result := services.KeywordRecognition(fileName)
+			helpers.RemoveRecordFile(fileName)
+			if result == true {
+				log.Log.Debug("Keyword matched")
+				go fc.StartVoiceRecognition()
+				state = Paused
+				break
+			} else {
+				log.Log.Debug("Keyword not matched")
+				go fc.StartVoiceRecognition()
+				state = Paused
+				break
+			}
+		}
+		time.Sleep(30)
+	}
 }
