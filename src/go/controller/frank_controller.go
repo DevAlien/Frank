@@ -9,6 +9,7 @@ import (
 	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
 	"frank/src/go/managers"
+	"frank/src/go/servers"
 	"frank/src/go/services"
 )
 
@@ -19,11 +20,12 @@ const (
 	Running = 2
 )
 
-const timeout = 60 * time.Second
+const timeout = 30 * time.Second
 
 type FrankController struct {
 	VoiceRecognition services.VoiceRecognition
 	Config           managers.Config
+	SocketIoServer   servers.SocketIoServer
 
 	timer     *time.Timer
 	keywordCh chan int
@@ -45,6 +47,7 @@ func NewFrankController() (FrankController, error) {
 
 	voiceRecognition, err := services.NewVoiceRecognition(frankController.Config.Get("google_api_key"))
 	frankController.VoiceRecognition = voiceRecognition
+	frankController.SocketIoServer = servers.NewSocketIoServer()
 
 	return frankController, nil
 }
@@ -63,16 +66,19 @@ func (fc *FrankController) Start() {
 }
 
 func (fc *FrankController) VoiceRecognitionToText(fileName string) {
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:analyzing", true)
 	fmt.Printf("#goroutines: %d\n", runtime.NumGoroutine())
 	log.Log.Debugf("[%s] Analyzing Audio", fileName)
 	text := fc.VoiceRecognition.AnalyzeAudio(fileName)
 
 	helpers.RemoveRecordFile(fileName)
-
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:text", text)
 	log.Log.Debugf("[%s] Found Text: %s", fileName, text)
 	commands := services.CheckCommands(text, fc.Config.Commands)
 	go devices.ManageCommands(commands, &fc.Config)
 	fc.CheckDeactivation(fileName, text)
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:analyzing", false)
+	go fc.StartVoiceRecognition()
 }
 
 func (fc *FrankController) CheckDeactivation(fileName string, text string) {
@@ -89,6 +95,8 @@ func (fc *FrankController) CheckDeactivation(fileName string, text string) {
 }
 
 func (fc *FrankController) StopVoiceRecognition() {
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:listening", false)
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:sleep", true)
 	log.Log.Debug("Stopping Voice Recognition And starting Keyword Recognition")
 	fc.killCh <- true
 	fc.voiceCh <- Stopped
@@ -98,6 +106,7 @@ func (fc *FrankController) StopVoiceRecognition() {
 func (fc *FrankController) StartVoiceRecognition() {
 	state := Running
 	log.Log.Debug("Started timeout to deactivate voice recognition")
+	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:listening", true)
 	fc.timer = time.AfterFunc(timeout, fc.StopVoiceRecognition)
 	for {
 		select {
@@ -122,7 +131,9 @@ func (fc *FrankController) StartVoiceRecognition() {
 			if fileName == "" {
 				break
 			}
+			fc.SocketIoServer.Server.BroadcastTo("bot", "bot:listening", false)
 			go fc.VoiceRecognitionToText(fileName)
+			return
 		}
 	}
 }
