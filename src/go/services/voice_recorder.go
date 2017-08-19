@@ -5,19 +5,32 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
+	"frank/src/go/managers"
 
 	"github.com/satori/go.uuid"
 )
+
+const defaultCommand = "-r 16000 -c 1 %s silence " // dirFile, "silence"
+const silenceDefault = "-l 1 0.2 2% 1 0.2 2%"
 
 func StartRecord(killChannel chan bool) (string, error) {
 	fileName := fmt.Sprintf("%s.flac", uuid.NewV4())
 	log.Log.Info("[" + fileName + "] listening...")
 
+	silenceParams := managers.ParsedConfig.Get("record_silence_params")
+	if silenceParams == "" {
+		log.Log.Debug("using default silence")
+		silenceParams = silenceDefault
+	}
+
 	dirFile := helpers.GetRecordPath(fileName)
-	cmd := exec.Command("rec", "-r", "16000", "-c", "1", dirFile, "silence", "-l", "1", "0.5", "0.1%", "1", "1.0", "0.1%")
+	parts := strings.Fields(fmt.Sprintf(defaultCommand, dirFile) + silenceParams)
+
+	cmd := exec.Command("rec", parts...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Start()

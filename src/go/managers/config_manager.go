@@ -50,6 +50,8 @@ type CommandAction struct {
 type MatchingInterface struct {
 }
 
+var ParsedConfig Config
+
 func (c *Config) Get(key string) string {
 	if val, ok := c.Configs[key]; ok {
 		return val.(string)
@@ -69,19 +71,18 @@ func GetConfig(fileName string) (Config, error) {
 }
 
 func ParseConfig(input []byte) (Config, error) {
-	var config Config
 
-	if err := json.Unmarshal(input, &config); err != nil {
-		return config, err
+	if err := json.Unmarshal(input, &ParsedConfig); err != nil {
+		return ParsedConfig, err
 	}
 
-	config.NamedDevices = map[string]Device{}
+	ParsedConfig.NamedDevices = map[string]Device{}
 
-	if len(config.Devices) > 0 {
-		for _, device := range config.Devices {
-			config.NamedDevices[device.Name] = device
+	if len(ParsedConfig.Devices) > 0 {
+		for _, device := range ParsedConfig.Devices {
+			ParsedConfig.NamedDevices[device.Name] = device
 		}
 	}
 
-	return config, nil
+	return ParsedConfig, nil
 }
