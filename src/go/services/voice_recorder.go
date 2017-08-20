@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"frank/src/go/config"
 	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
-	"frank/src/go/managers"
 
 	"github.com/satori/go.uuid"
 )
@@ -21,7 +21,7 @@ func StartRecord(killChannel chan bool) (string, error) {
 	fileName := fmt.Sprintf("%s.flac", uuid.NewV4())
 	log.Log.Info("[" + fileName + "] listening...")
 
-	silenceParams := managers.ParsedConfig.Get("record_silence_params")
+	silenceParams := config.ParsedConfig.Get("record_silence_params")
 	if silenceParams == "" {
 		log.Log.Debug("using default silence")
 		silenceParams = silenceDefault

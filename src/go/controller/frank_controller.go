@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"time"
 
+	"frank/src/go/config"
 	"frank/src/go/devices"
 	"frank/src/go/helpers"
 	"frank/src/go/helpers/log"
@@ -24,7 +25,7 @@ const timeout = 30 * time.Second
 
 type FrankController struct {
 	VoiceRecognition services.VoiceRecognition
-	Config           managers.Config
+	Config           config.Config
 	SocketIoServer   servers.SocketIoServer
 
 	timer     *time.Timer
@@ -38,10 +39,14 @@ func NewFrankController() (FrankController, error) {
 
 	frankController := FrankController{}
 	log.InitLogger()
-	c, err := managers.GetConfig(helpers.ConfigDir)
+	log.Log.Critical("init")
+	c, err := config.GetConfig(helpers.ConfigDir)
 	if err != nil {
+		log.Log.Critical(err)
 		return frankController, err
 	}
+	log.Log.Critical("dio")
+	managers.NewPlugins()
 
 	frankController.Config = c
 
@@ -75,7 +80,7 @@ func (fc *FrankController) VoiceRecognitionToText(fileName string) {
 	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:text", text)
 	log.Log.Debugf("[%s] Found Text: %s", fileName, text)
 	commands := services.CheckCommands(text, fc.Config.Commands)
-	go devices.ManageCommands(commands, &fc.Config)
+	go devices.ManageCommands(commands)
 	fc.CheckDeactivation(fileName, text)
 	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:analyzing", false)
 	go fc.StartVoiceRecognition()
