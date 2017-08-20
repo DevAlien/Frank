@@ -108,11 +108,17 @@ func (fc *FrankController) StopVoiceRecognition() {
 	fc.keywordCh <- Running
 }
 
+func (fc *FrankController) StartTimerStop() {
+	if fc.timer != nil {
+		fc.timer.Stop()
+	}
+	fc.timer = time.AfterFunc(timeout, fc.StopVoiceRecognition)
+}
 func (fc *FrankController) StartVoiceRecognition() {
 	state := Running
 	log.Log.Debug("Started timeout to deactivate voice recognition")
 	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:listening", true)
-	fc.timer = time.AfterFunc(timeout, fc.StopVoiceRecognition)
+	fc.StartTimerStop()
 	for {
 		select {
 		case state = <-fc.voiceCh:
