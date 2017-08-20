@@ -71,7 +71,7 @@ func (ctx *PluginMusicStreamer) startStream(stream string, killChannel chan bool
 
 ## How is it configured?
 FA has a config.json file which will be located at `~/.frank/config.json`. This file contains all the information and configuration for Frank to run.
-```json
+```js
 {
   "name": "Frank The Bot",
   "configs": {
@@ -91,7 +91,7 @@ You can deactivate the Assistant with some special keywords, you can define them
 ##### Devices
 Here you can define devices. **(this config structure can change)** An example below of an `arduino` using `firmata` with 2 `interfaces` using `led drivers`.
 So basically firmata can connect to it, using the defined PIN can change the value and, in this case, the led will switch on or off.
-```json
+```js
 {
       "name":"livingroom-light", // unique name of the device
       "type":"firmata", // type of the device
@@ -115,7 +115,7 @@ So basically firmata can connect to it, using the defined PIN can change the val
 ##### Commands
 The commands are basically the keywords you want to interact with and use with a plugin.
 Example 1, using the `music-stream`. Basically `music-stream` expects to know the type of music you want to listen. So we can capture that in the command. `music {type}` will match `music club`, `music rock` and so on. And the `{type}` Will be passed to the plugin so it knows what to do.
-```json
+```js
 {
   "name":"Music On", //name of the command
   "commands":[ //list of commands
@@ -134,7 +134,7 @@ Example 1, using the `music-stream`. Basically `music-stream` expects to know th
 
 The second command is the one using a device (the one we defined above).
 This command basically has a matching interface, which is special, with the captured keword we can use it in the matchinInterface to map the word to an interface. This is because if we say `switch on light green` we want to switch on just the light on the green interface. using the matched `{color}` we can select the interface.
-```json
+```js
 {
       "name":"light on Special",
       "commands":[
