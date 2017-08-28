@@ -19,7 +19,12 @@ func NewPluginFirmata() PluginFirmata {
 }
 
 func (ctx *PluginFirmata) ExecAction(action models.CommandAction, extraText map[string]string) {
-	device := config.ParsedConfig.NamedDevices[action.DeviceName]
+	device, err := config.GetDevice(action.DeviceName)
+	if err != nil {
+		log.Log.Error(err)
+		return
+	}
+	log.Log.Debug("Interacting with device", device.Name)
 	go FirmataHandler(action, device, extraText)
 }
 

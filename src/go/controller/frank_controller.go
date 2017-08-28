@@ -25,7 +25,6 @@ const timeout = 30 * time.Second
 
 type FrankController struct {
 	VoiceRecognition services.VoiceRecognition
-	Config           config.Config
 	SocketIoServer   servers.SocketIoServer
 
 	timer     *time.Timer
@@ -40,32 +39,44 @@ func NewFrankController() (FrankController, error) {
 	frankController := FrankController{}
 	log.InitLogger()
 	log.Log.Critical("init")
-	c, err := config.GetConfig(helpers.ConfigDir)
+	err := config.InitConfig(helpers.ConfigDir)
 	if err != nil {
 		log.Log.Critical(err)
 		return frankController, err
 	}
+
+	// config.ParsedConfig.ToJSON()
+	// fmt.Println(config.ParsedConfig.GetDevice("livingroom-light").Name)
+	co := config.Command{
+		Name: "asd",
+	}
+	err = config.AddCommand(co)
+	if err != nil {
+		log.Log.Critical(err)
+	}
 	log.Log.Critical("dio")
 	managers.NewPlugins()
 
-	frankController.Config = c
-
-	voiceRecognition, err := services.NewVoiceRecognition(frankController.Config.Get("google_api_key"))
+	voiceRecognition, err := services.NewVoiceRecognition(config.ParsedConfig.Get("google_api_key"))
 	frankController.VoiceRecognition = voiceRecognition
 	frankController.SocketIoServer = servers.NewSocketIoServer()
-
+	servers.NewHttpServer()
 	return frankController, nil
 }
 
 func (fc *FrankController) Start() {
-	log.Log.Info(fc.Config.Name)
+	log.Log.Info(config.ParsedConfig.Name)
 	fc.keywordCh = make(chan int)
 	fc.voiceCh = make(chan int)
 	fc.killCh = make(chan bool, 1)
 
 	log.Log.Info("Starting Keyword Recognition")
-	go fc.StartKeywordRecognition()
-
+	//go fc.StartKeywordRecognition()
+	fc.SocketIoServer.Server.On("text", func(msg string) (bool, string) {
+		commands := services.CheckCommands(msg, config.ParsedConfig.Commands)
+		go devices.ManageCommands(commands)
+		return len(commands) > 0, "asd"
+	})
 	var input string
 	fmt.Scanln(&input)
 }
@@ -79,7 +90,7 @@ func (fc *FrankController) VoiceRecognitionToText(fileName string) {
 	helpers.RemoveRecordFile(fileName)
 	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:text", text)
 	log.Log.Debugf("[%s] Found Text: %s", fileName, text)
-	commands := services.CheckCommands(text, fc.Config.Commands)
+	commands := services.CheckCommands(text, config.ParsedConfig.Commands)
 	go devices.ManageCommands(commands)
 	fc.CheckDeactivation(fileName, text)
 	fc.SocketIoServer.Server.BroadcastTo("bot", "bot:analyzing", false)
@@ -89,7 +100,7 @@ func (fc *FrankController) VoiceRecognitionToText(fileName string) {
 func (fc *FrankController) CheckDeactivation(fileName string, text string) {
 	log.Log.Debugf("[%s] Checking Deactivation Keywords", fileName)
 
-	for _, sentence := range fc.Config.Deactivation {
+	for _, sentence := range config.ParsedConfig.Deactivation {
 		if sentence == text {
 			log.Log.Infof("[%s] Deactivation Keyword Found", fileName)
 			fc.StopVoiceRecognition()
@@ -105,7 +116,7 @@ func (fc *FrankController) StopVoiceRecognition() {
 	log.Log.Debug("Stopping Voice Recognition And starting Keyword Recognition")
 	fc.killCh <- true
 	fc.voiceCh <- Stopped
-	fc.keywordCh <- Running
+	go fc.StartKeywordRecognition()
 }
 
 func (fc *FrankController) StartTimerStop() {
@@ -179,13 +190,12 @@ func (fc *FrankController) StartKeywordRecognition() {
 			if result == true {
 				log.Log.Debug("Keyword matched")
 				go fc.StartVoiceRecognition()
-				state = Paused
-				break
+				return
 			} else {
 				log.Log.Debug("Keyword not matched")
-				go fc.StartVoiceRecognition()
-				state = Paused
-				break
+				go fc.StartVoiceRecognition() //TODO REMOVE
+				return
+				// WHEN REMOVED THE ABOVE 2 LINES break
 			}
 		}
 		time.Sleep(30)

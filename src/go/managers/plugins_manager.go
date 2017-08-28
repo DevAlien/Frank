@@ -39,6 +39,13 @@ func NewPlugins() {
 		Plugin: &p2,
 	})
 
+	p3 := plugins.NewPluginSonoff()
+	ActivePlugins.AddPlugin(Plugin{
+		Name:   "Sonoff",
+		Type:   "device",
+		Plugin: &p3,
+	})
+
 }
 
 func (ctx *PluginsManager) AddPlugin(plugin Plugin) {
