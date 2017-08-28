@@ -1,7 +1,7 @@
 {
   "name": "Frank The Bot",
   "configs": {
-    "google_api_key": "AIzaSyBEsKHzV5PkHUhvEOKjYfefv7_tkZ8EREs",
+    "google_api_key": "",
     "record_silence_params": "-l 1 0.2 2% 1 0.2 2%"
   },
   "deactivation": ["spegniti", "stai zitto", "stai zitto quando parli con me"],
