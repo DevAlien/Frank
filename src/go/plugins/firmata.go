@@ -18,7 +18,7 @@ func NewPluginFirmata() PluginFirmata {
 	return pf
 }
 
-func (ctx *PluginFirmata) ExecAction(action models.CommandAction, extraText map[string]string) {
+func (ctx *PluginFirmata) ExecAction(action models.Action, extraText map[string]string) {
 	device, err := config.GetDevice(action.DeviceName)
 	if err != nil {
 		log.Log.Error(err)
@@ -28,7 +28,7 @@ func (ctx *PluginFirmata) ExecAction(action models.CommandAction, extraText map[
 	go FirmataHandler(action, device, extraText)
 }
 
-func FirmataHandler(action models.CommandAction, device config.Device, extraText map[string]string) {
+func FirmataHandler(action models.Action, device models.Device, extraText map[string]string) {
 	var firmataA *firmata.Adaptor
 	if device.Connection.Type == "tcp" {
 		firmataAdaptor := firmata.NewTCPAdaptor(device.Connection.Address)
@@ -70,7 +70,7 @@ func FirmataHandler(action models.CommandAction, device config.Device, extraText
 	}
 }
 
-func FirmataLedInterface(firmataA *firmata.Adaptor, action models.CommandAction, deviceInterface config.DeviceInterface) {
+func FirmataLedInterface(firmataA *firmata.Adaptor, action models.Action, deviceInterface models.DeviceInterface) {
 	log.Log.Debug("Interacting with led", deviceInterface.Pin)
 	led := gpio.NewLedDriver(firmataA, deviceInterface.Pin)
 	if action.Action["action"].(string) == "on" {

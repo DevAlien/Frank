@@ -15,7 +15,7 @@ func NewPluginSonoff() PluginSonoff {
 	return ps
 }
 
-func (ctx *PluginSonoff) ExecAction(action models.CommandAction, extraText map[string]string) {
+func (ctx *PluginSonoff) ExecAction(action models.Action, extraText map[string]string) {
 	device, err := config.GetDevice(action.DeviceName)
 	if err != nil {
 		log.Log.Error(err)
@@ -26,6 +26,6 @@ func (ctx *PluginSonoff) ExecAction(action models.CommandAction, extraText map[s
 	go SonoffHandler(action, device, extraText)
 }
 
-func SonoffHandler(action models.CommandAction, device config.Device, extraText map[string]string) {
+func SonoffHandler(action models.Action, device models.Device, extraText map[string]string) {
 
 }

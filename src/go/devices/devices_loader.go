@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"frank/src/go/config"
 	"frank/src/go/helpers/log"
 	"frank/src/go/managers"
 	"frank/src/go/models"
@@ -23,7 +24,12 @@ func ManageCommands(commandsFound []services.CommandFound) {
 	}
 }
 
-func HandleActions(action models.CommandAction, extraText map[string]string) {
+func HandleActions(commandAction models.CommandAction, extraText map[string]string) {
+	action, err := config.GetAction(commandAction.Action)
+	if err != nil {
+		log.Log.Warning(err)
+	}
+
 	if action.Plugin != "" {
 		managers.ActivePlugins.ExecAction(action, extraText)
 		return

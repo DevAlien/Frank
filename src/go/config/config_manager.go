@@ -9,49 +9,14 @@ import (
 	"frank/src/go/models"
 )
 
-type Config struct {
-	Name         string                 `json:"name"`
-	Deactivation []string               `json:"deactivation"`
-	Configs      map[string]interface{} `json:"configs"`
-	Devices      []Device               `json:"devices"`
-	NamedDevices map[string]Device      `json:"-"`
-	Commands     []Command              `json:"commands"`
-}
+type Config struct{}
 
-type Device struct {
-	Name       string            `json:"name" binding:"required"`
-	Type       string            `json:"type" binding:"required"`
-	Connection DeviceConnection  `json:"connection"`
-	Interfaces []DeviceInterface `json:"interfaces"`
-	Commands   []Command         `json:"commands,omitempty"`
-}
-
-type DeviceConnection struct {
-	Type    string `json:"type"`
-	Address string `json:"address"`
-}
-
-type DeviceInterface struct {
-	Name   string `json:"name"`
-	Driver string `json:"driver"`
-	Pin    string `json:"pin"`
-}
-
-type Command struct {
-	Name     string                 `json:"name"`
-	Commands []string               `json:"commands"`
-	Actions  []models.CommandAction `json:"actions"`
-}
-
-type MatchingInterface struct {
-}
-
-var ParsedConfig Config
+var ParsedConfig models.Config
 
 var FileName string
 
-func (c *Config) Get(key string) string {
-	if val, ok := c.Configs[key]; ok {
+func Get(key string) string {
+	if val, ok := ParsedConfig.Configs[key]; ok {
 		return val.(string)
 	}
 
@@ -84,21 +49,28 @@ func toJSON() []byte {
 	return b
 }
 
-func AddCommand(command Command) error {
+func AddCommand(command models.Command) error {
 	ParsedConfig.Commands = append(ParsedConfig.Commands, command)
 	return saveConfig()
 }
 
-func AddDevice(device Device) error {
+func AddDevice(device models.Device) error {
 	ParsedConfig.Devices = append(ParsedConfig.Devices, device)
 	generateParsedDevices()
 
 	return saveConfig()
 }
 
+func AddAction(action models.Action) error {
+	ParsedConfig.Actions = append(ParsedConfig.Actions, action)
+	generateParsedActions()
+
+	return saveConfig()
+}
+
 func RemoveDevice(deviceName string) error {
 	found := false
-	devices := []Device{}
+	devices := []models.Device{}
 	for _, d := range ParsedConfig.Devices {
 		if d.Name != deviceName {
 			devices = append(devices, d)
@@ -115,23 +87,58 @@ func RemoveDevice(deviceName string) error {
 	return nil
 }
 
-func GetCommandsByDeviceName(deviceName string) []Command {
-	commands := []Command{}
+func GetActionsByDeviceName(deviceName string) []models.Action {
+	actions := []models.Action{}
+
+	for _, a := range ParsedConfig.Actions {
+		if a.DeviceName == deviceName {
+			actions = append(actions, a)
+		}
+	}
+	fmt.Println("actions", actions)
+	return actions
+}
+
+func GetCommandsByDeviceName(deviceName string) []models.Command {
+	commands := []models.Command{}
 
 	for _, c := range ParsedConfig.Commands {
 		for _, cA := range c.Actions {
-			if cA.DeviceName == deviceName {
-				commands = append(commands, c)
-				break
-			}
+			fmt.Println(cA)
+			// if cA.DeviceName == deviceName {
+			// 	commands = append(commands, c)
+			// 	break
+			// }
 		}
 	}
 
 	return commands
 }
 
-func GetDevice(deviceName string) (Device, error) {
-	device := Device{}
+func GetAvailablePlugins() []models.Plugin {
+	plugins := []models.Plugin{}
+	mappedPlugins := map[string]*models.Plugin{}
+
+	for _, a := range ParsedConfig.Actions {
+		if a.Plugin != "" {
+			if _, ok := mappedPlugins[a.Plugin]; !ok {
+				mappedPlugins[a.Plugin] = &models.Plugin{
+					Name:    a.Plugin,
+					Actions: []models.Action{},
+				}
+			}
+			mappedPlugins[a.Plugin].Actions = append(mappedPlugins[a.Plugin].Actions, a)
+		}
+	}
+
+	for _, v := range mappedPlugins {
+		plugins = append(plugins, *v)
+	}
+
+	return plugins
+}
+func GetDevice(deviceName string) (models.Device, error) {
+	device := models.Device{}
 	if device, ok := ParsedConfig.NamedDevices[deviceName]; ok {
 		return device, nil
 	}
@@ -139,8 +146,17 @@ func GetDevice(deviceName string) (Device, error) {
 	return device, fmt.Errorf("Device \"%s\" not found", deviceName)
 }
 
-func GetDeviceInterface(deviceName string, interfaceName string) (DeviceInterface, error) {
-	deviceInterface := DeviceInterface{}
+func GetAction(actionName string) (models.Action, error) {
+	action := models.Action{}
+	if action, ok := ParsedConfig.NamedActions[actionName]; ok {
+		return action, nil
+	}
+
+	return action, fmt.Errorf("Action \"%s\" not found", actionName)
+}
+
+func GetDeviceInterface(deviceName string, interfaceName string) (models.DeviceInterface, error) {
+	deviceInterface := models.DeviceInterface{}
 	device, err := GetDevice(deviceName)
 	if err != nil {
 		return deviceInterface, err
@@ -149,22 +165,32 @@ func GetDeviceInterface(deviceName string, interfaceName string) (DeviceInterfac
 	return getDeviceInterface(device, interfaceName)
 }
 
-func getDeviceInterface(device Device, interfaceName string) (DeviceInterface, error) {
+func getDeviceInterface(device models.Device, interfaceName string) (models.DeviceInterface, error) {
 	for _, in := range device.Interfaces {
 		if in.Name == interfaceName {
 			return in, nil
 		}
 	}
 
-	return DeviceInterface{}, fmt.Errorf("Interface \"%s\" not found in Device \"%s\"", interfaceName, device.Name)
+	return models.DeviceInterface{}, fmt.Errorf("Interface \"%s\" not found in Device \"%s\"", interfaceName, device.Name)
 }
 
 func generateParsedDevices() {
-	ParsedConfig.NamedDevices = map[string]Device{}
+	ParsedConfig.NamedDevices = map[string]models.Device{}
 
 	if len(ParsedConfig.Devices) > 0 {
 		for _, device := range ParsedConfig.Devices {
 			ParsedConfig.NamedDevices[device.Name] = device
+		}
+	}
+}
+
+func generateParsedActions() {
+	ParsedConfig.NamedActions = map[string]models.Action{}
+
+	if len(ParsedConfig.Actions) > 0 {
+		for _, action := range ParsedConfig.Actions {
+			ParsedConfig.NamedActions[action.Name] = action
 		}
 	}
 }
@@ -176,6 +202,7 @@ func parseConfig(input []byte) error {
 	}
 
 	generateParsedDevices()
+	generateParsedActions()
 
 	return nil
 }

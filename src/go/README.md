@@ -10,7 +10,7 @@ We live in an italian speaking country and bots of this kind are all made for th
 Another reason is becacuse we did not find anything as configurable and as low level.
 
 ## How is it built?
-- sox (http://sox.sourceforge.net/) is used to record the voice with the effect silence to cut the pieces
+- sox (http://sox.sourceforge.net/) is used to record the voice with the effect "silence" to cut the pieces
 - snowboy - To recognize the keyword to make it listen to you.
 - Google cloud voice recognition API to transform the voice to text.
 - Gobot (https://gobot.io/) to interact with the devices
@@ -28,7 +28,7 @@ FA has a "plugin" system, basically you can attach commands to plugins and the p
 - [ ] Wather (weather) - You can ask for the weather around the world
 
 ## How do I build a plugin?
-A plugin is a struct that exposes an `ExecAction(models.CommandAction, map[string]string)` and from that it will know what to do.
+A plugin is a struct that exposes an `ExecAction(models.Action, map[string]string)` and from that it will know what to do.
 Example
 ```golang
 package plugins
@@ -50,7 +50,7 @@ func NewPluginMusicStream() PluginMusicStreamer {
 	return pms
 }
 
-func (ctx *PluginMusicStreamer) ExecAction(action models.CommandAction, extraText map[string]string) {
+func (ctx *PluginMusicStreamer) ExecAction(action models.Action, extraText map[string]string) {
 	switch action.Action["action"].(string) {
 	case "play":
 		go ctx.startStream(stations[extraText["type"]], ctx.killCh)

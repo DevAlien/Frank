@@ -3,7 +3,6 @@ package services
 import (
 	"regexp"
 
-	"frank/src/go/config"
 	"frank/src/go/models"
 )
 
@@ -17,7 +16,7 @@ type CommandFound struct {
 var re = regexp.MustCompile(`{(.*?)}`)
 var myExp = regexp.MustCompile(`asd {(?P<lol>.*)} var {(?P<mad>.*)}`)
 
-func CheckCommands(text string, commands []config.Command) []CommandFound {
+func CheckCommands(text string, commands []models.Command) []CommandFound {
 	var commandsFound []CommandFound
 	for _, command := range commands {
 		for _, textCommand := range command.Commands {

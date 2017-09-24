@@ -21,7 +21,7 @@ func StartRecord(killChannel chan bool) (string, error) {
 	fileName := fmt.Sprintf("%s.flac", uuid.NewV4())
 	log.Log.Info("[" + fileName + "] listening...")
 
-	silenceParams := config.ParsedConfig.Get("record_silence_params")
+	silenceParams := config.Get("record_silence_params")
 	if silenceParams == "" {
 		log.Log.Debug("using default silence")
 		silenceParams = silenceDefault

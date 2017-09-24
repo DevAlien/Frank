@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
 	"frank/src/go/config"
@@ -12,6 +14,9 @@ import (
 	"frank/src/go/managers"
 	"frank/src/go/servers"
 	"frank/src/go/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/tucnak/telebot"
 )
 
 const developerKey = "AIzaSyBEsKHzV5PkHUhvEOKjYfefv7_tkZ8EREs"
@@ -26,11 +31,11 @@ const timeout = 30 * time.Second
 type FrankController struct {
 	VoiceRecognition services.VoiceRecognition
 	SocketIoServer   servers.SocketIoServer
-
-	timer     *time.Timer
-	keywordCh chan int
-	voiceCh   chan int
-	killCh    chan bool
+	Bot              *telebot.Bot
+	timer            *time.Timer
+	keywordCh        chan int
+	voiceCh          chan int
+	killCh           chan bool
 }
 
 func NewFrankController() (FrankController, error) {
@@ -45,23 +50,24 @@ func NewFrankController() (FrankController, error) {
 		return frankController, err
 	}
 
-	// config.ParsedConfig.ToJSON()
-	// fmt.Println(config.ParsedConfig.GetDevice("livingroom-light").Name)
-	co := config.Command{
-		Name: "asd",
-	}
-	err = config.AddCommand(co)
-	if err != nil {
-		log.Log.Critical(err)
-	}
-	log.Log.Critical("dio")
 	managers.NewPlugins()
 
-	voiceRecognition, err := services.NewVoiceRecognition(config.ParsedConfig.Get("google_api_key"))
+	voiceRecognition, err := services.NewVoiceRecognition(config.Get("google_api_key"))
 	frankController.VoiceRecognition = voiceRecognition
 	frankController.SocketIoServer = servers.NewSocketIoServer()
 	servers.NewHttpServer()
 	return frankController, nil
+}
+
+func (fc *FrankController) messages() {
+	for message := range fc.Bot.Messages {
+		log.Log.Debugf("Received a message from %s with the text: %s %s\n",
+			message.Sender.Username, message.Text, message.Chat)
+		commands := services.CheckCommands(strings.ToLower(message.Text), config.ParsedConfig.Commands)
+		go devices.ManageCommands(commands)
+		fc.Bot.SendMessage(message.Sender,
+			"Comando Eseguito "+strconv.FormatBool(len(commands) > 0)+"!"+"asd", nil)
+	}
 }
 
 func (fc *FrankController) Start() {
@@ -72,13 +78,48 @@ func (fc *FrankController) Start() {
 
 	log.Log.Info("Starting Keyword Recognition")
 	//go fc.StartKeywordRecognition()
+
 	fc.SocketIoServer.Server.On("text", func(msg string) (bool, string) {
 		commands := services.CheckCommands(msg, config.ParsedConfig.Commands)
 		go devices.ManageCommands(commands)
 		return len(commands) > 0, "asd"
 	})
+
+	servers.AddRoute("GET", "/command", func(c *gin.Context) {
+		text := c.DefaultQuery("text", "")
+		if text != "" {
+			commands := services.CheckCommands(text, config.ParsedConfig.Commands)
+			go devices.ManageCommands(commands)
+			a := "asd"
+			c.JSON(200, a)
+		}
+
+	})
+
+	fc.StartTelegramBot(config.Get("telegram_key"))
+
 	var input string
 	fmt.Scanln(&input)
+}
+
+func (fc *FrankController) StartTelegramBot(botKey string) {
+	if botKey == "" {
+		return
+	}
+
+	log.Log.Info("Starting Telegram Bot")
+	bot, err := telebot.NewBot(botKey)
+	if err != nil {
+		log.Log.Critical(err)
+	}
+	fc.Bot = bot
+	fc.Bot.Messages = make(chan telebot.Message, 100)
+
+	go fc.messages()
+
+	go func() {
+		fc.Bot.Start(1 * time.Second)
+	}()
 }
 
 func (fc *FrankController) VoiceRecognitionToText(fileName string) {

@@ -16,7 +16,7 @@ type Plugin struct {
 }
 
 type pluginI interface {
-	ExecAction(models.CommandAction, map[string]string)
+	ExecAction(models.Action, map[string]string)
 }
 
 var ActivePlugins PluginsManager
@@ -52,7 +52,7 @@ func (ctx *PluginsManager) AddPlugin(plugin Plugin) {
 	ctx.Plugins[plugin.Name] = plugin
 }
 
-func (ctx *PluginsManager) ExecAction(action models.CommandAction, extraText map[string]string) {
+func (ctx *PluginsManager) ExecAction(action models.Action, extraText map[string]string) {
 	plugin := ctx.Plugins[action.Plugin].Plugin.(pluginI)
 	plugin.ExecAction(action, extraText)
 }

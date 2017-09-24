@@ -28,7 +28,7 @@ func NewPluginMusicStream() PluginMusicStreamer {
 	return pms
 }
 
-func (ctx *PluginMusicStreamer) ExecAction(action models.CommandAction, extraText map[string]string) {
+func (ctx *PluginMusicStreamer) ExecAction(action models.Action, extraText map[string]string) {
 	switch action.Action["action"].(string) {
 	case "play":
 		if ctx.isPlaying == true {

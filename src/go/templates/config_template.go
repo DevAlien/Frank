@@ -7,5 +7,6 @@ const ConfigTemplate = `{
   },
   "deactivation": ["spegniti"],
   "devices": [],
+  "actions": [],
   "commands": []
 }`
