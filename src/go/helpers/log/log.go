@@ -13,12 +13,9 @@ var format = logging.MustStringFormatter(
 )
 
 func InitLogger() {
-	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
 
-	// For messages written to backend2 we want to add some additional
-	// information to the output, including the used log level and the name of
-	// the function.
-	formatter := logging.NewBackendFormatter(backend1, format)
+	formatter := logging.NewBackendFormatter(backend, format)
 	//formatter.SetLevel(logging.DEBUG, "")
 
 	// Set the backends to be used.

@@ -183,6 +183,12 @@
 			"revisionTime": "2017-06-22T06:09:55Z"
 		},
 		{
+			"checksumSHA1": "Epx/Fewr0QrXZRdg26+97oIoV2k=",
+			"path": "github.com/jasonlvhit/gocron",
+			"revision": "42a5804d37aa0b9239b265e894a16b8edbf52d54",
+			"revisionTime": "2016-06-29T18:10:17Z"
+		},
+		{
 			"checksumSHA1": "cTDA66oZUy18cIzJsU1diKq+9CE=",
 			"path": "github.com/mattn/go-colorable",
 			"revision": "ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b",

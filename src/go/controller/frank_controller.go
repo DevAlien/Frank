@@ -19,6 +19,14 @@ import (
 	"github.com/tucnak/telebot"
 )
 
+func task() {
+	fmt.Println("I am runnning task.")
+}
+
+func taskWithParams(a int, b string) {
+	fmt.Println(a, b)
+}
+
 const developerKey = "AIzaSyBEsKHzV5PkHUhvEOKjYfefv7_tkZ8EREs"
 const (
 	Stopped = 0
@@ -51,6 +59,8 @@ func NewFrankController() (FrankController, error) {
 	}
 
 	managers.NewPlugins()
+
+	managers.LoadCrons()
 
 	voiceRecognition, err := services.NewVoiceRecognition(config.Get("google_api_key"))
 	frankController.VoiceRecognition = voiceRecognition

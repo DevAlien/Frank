@@ -17,12 +17,14 @@ var stations = map[string]string{
 
 type PluginMusicStreamer struct {
 	killCh    chan bool
+	stoppedCh chan bool
 	isPlaying bool
 }
 
 func NewPluginMusicStream() PluginMusicStreamer {
 	pms := PluginMusicStreamer{}
 	pms.killCh = make(chan bool, 1)
+	pms.stoppedCh = make(chan bool, 1)
 	pms.isPlaying = false
 
 	return pms
@@ -33,6 +35,8 @@ func (ctx *PluginMusicStreamer) ExecAction(action models.Action, extraText map[s
 	case "play":
 		if ctx.isPlaying == true {
 			ctx.killCh <- true
+			//before starting a new one we wait for the process to be really stopped (stops in defer)
+			<-ctx.stoppedCh
 		}
 		go ctx.startStream(stations[extraText["type"]], ctx.killCh)
 	case "stop":
@@ -42,6 +46,7 @@ func (ctx *PluginMusicStreamer) ExecAction(action models.Action, extraText map[s
 
 func (ctx *PluginMusicStreamer) stopStream() {
 	ctx.isPlaying = false
+	ctx.stoppedCh <- true
 }
 
 func (ctx *PluginMusicStreamer) startStream(stream string, killChannel chan bool) {
@@ -73,5 +78,5 @@ func (ctx *PluginMusicStreamer) startStream(stream string, killChannel chan bool
 		log.Log.Error("Plugin[music-stream]", err)
 		return
 	}
-	return
+
 }

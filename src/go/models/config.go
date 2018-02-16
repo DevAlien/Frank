@@ -9,6 +9,16 @@ type Config struct {
 	NamedActions map[string]Action      `json:"-"`
 	Actions      []Action               `json:"actions"`
 	Commands     []Command              `json:"commands"`
+	Crons        []Cron                 `json:"crons"`
+}
+
+type Cron struct {
+	Description string            `json:"description" binding:"required"`
+	Action      string            `json:"action" binding:"required"`
+	Every       int               `json:"every"`
+	TimeType    string            `json:"time_type"`
+	At          string            `json:"at,omitempty"`
+	Extra       map[string]string `json:"extra,omitempty"`
 }
 
 type Device struct {
