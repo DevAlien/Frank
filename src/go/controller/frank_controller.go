@@ -54,7 +54,7 @@ func NewFrankController() (FrankController, error) {
 	log.Log.Critical("init")
 	err := config.InitConfig(helpers.ConfigDir)
 	if err != nil {
-		log.Log.Critical(err)
+		log.Log.Critical(err.Error())
 		return frankController, err
 	}
 
@@ -120,7 +120,7 @@ func (fc *FrankController) StartTelegramBot(botKey string) {
 	log.Log.Info("Starting Telegram Bot")
 	bot, err := telebot.NewBot(botKey)
 	if err != nil {
-		log.Log.Critical(err)
+		log.Log.Critical(err.Error())
 	}
 	fc.Bot = bot
 	fc.Bot.Messages = make(chan telebot.Message, 100)

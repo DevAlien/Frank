@@ -21,7 +21,7 @@ func NewPluginFirmata() PluginFirmata {
 func (ctx *PluginFirmata) ExecAction(action models.Action, extraText map[string]string) {
 	device, err := config.GetDevice(action.DeviceName)
 	if err != nil {
-		log.Log.Error(err)
+		log.Log.Error(err.Error())
 		return
 	}
 	log.Log.Debug("Interacting with device", device.Name)

@@ -27,7 +27,7 @@ func ManageCommands(commandsFound []services.CommandFound) {
 func HandleActions(commandAction models.CommandAction, extraText map[string]string) {
 	action, err := config.GetAction(commandAction.Action)
 	if err != nil {
-		log.Log.Warning(err)
+		log.Log.Warning(err.Error())
 	}
 
 	if action.Plugin != "" {
