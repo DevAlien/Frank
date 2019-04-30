@@ -21,7 +21,7 @@ func (ctx *PluginSonoff) ExecAction(action models.Action, extraText map[string]s
 		log.Log.Error(err.Error())
 		return
 	}
-	log.Log.Debug("Interacting with device", device.Name)
+	log.Log.Debugf("Interacting with device %s", device.Name)
 
 	go SonoffHandler(action, device, extraText)
 }

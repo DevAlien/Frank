@@ -279,13 +279,12 @@ Component Card
 */
 
 .card {
-  width: 356px;
   font-family: "Roboto", sans-serif;
   border:1px solid #efefef;
   box-shadow: 1px 1px 1px 1px rgba(255, 255, 255, 0.8);
   transition: 0.3s;
   border-radius: 2px;
-  margin-bottom: 10px;
+  margin: 10px 10px;
 }
 
 .rich-area {

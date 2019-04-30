@@ -24,7 +24,7 @@ func (ctx *PluginFirmata) ExecAction(action models.Action, extraText map[string]
 		log.Log.Error(err.Error())
 		return
 	}
-	log.Log.Debug("Interacting with device", device.Name)
+	log.Log.Debugf("Interacting with device %s", device.Name)
 	go FirmataHandler(action, device, extraText)
 }
 

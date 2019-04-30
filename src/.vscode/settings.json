@@ -1,0 +1,6 @@
+{
+  "go.gopath": "/Users/goncalo/go",
+  "go.goroot": "/usr/local/opt/go/libexec",
+  "go.formatTool": "gofmt",
+  "editor.formatOnSave": true
+}

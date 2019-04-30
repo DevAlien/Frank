@@ -4,14 +4,12 @@ import (
 	"frank/src/go/config"
 	"frank/src/go/helpers/log"
 	"frank/src/go/models"
-
-	"github.com/jasonlvhit/gocron"
+	"gopkg.in/robfig/cron.v2"
 )
 
-func actionCronJob(action models.Action, extra map[string]string) {
-	log.Log.Warning("first Job")
-	ActivePlugins.ExecAction(action, extra)
-}
+const DEFAULT_DDNS_CRON = "0/2 * * * *"
+
+var c = cron.New()
 
 func AddCron(cron models.Cron) {
 	action, err := config.GetAction(cron.Action)
@@ -20,21 +18,35 @@ func AddCron(cron models.Cron) {
 		return
 	}
 
-	gc := gocron.Every(uint64(cron.Every))
-	if cron.TimeType == "seconds" {
-		gc = gc.Seconds()
-	}
-
-	gc.Do(actionCronJob, action, cron.Extra)
+	c.AddFunc(cron.CronExpression, func() {
+		log.Log.Infof("Cron Started '%s'", cron.Description)
+		ActivePlugins.ExecAction(action, cron.Extra)
+	})
 }
 
 func LoadCrons() {
-	gocron.Clear()
+	c.Start()
+	c.Stop()
+	c = cron.New()
+
 	crons := config.ParsedConfig.Crons
 
 	for _, c := range crons {
 		AddCron(c)
 	}
 
-	gocron.Start()
+	if config.ParsedConfig.Ddns.Hostname != "" {
+		cronExpression := DEFAULT_DDNS_CRON
+		if config.ParsedConfig.Ddns.CronExpression != "" {
+			cronExpression = config.ParsedConfig.Ddns.CronExpression
+		}
+
+		c.AddFunc(cronExpression, func() {
+			log.Log.Infof("Cron Started 'DDNS'")
+			go DdnsManager.SetIp()
+		})
+
+	}
+
+	c.Start()
 }

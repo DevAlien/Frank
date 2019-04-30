@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
+
 	"frank/src/go/controller"
 )
 
 func main() {
-	fc, _ := controller.NewFrankController()
-	fc.Start()
+	controller.NewFrankController()
+
+	var input string
+	fmt.Scanln(&input)
+	// fc.Start()
 }

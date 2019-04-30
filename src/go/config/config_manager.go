@@ -6,7 +6,12 @@ import (
 	"io/ioutil"
 	"log"
 
+	l "frank/src/go/helpers/log"
 	"frank/src/go/models"
+
+	"github.com/creasty/defaults"
+	"github.com/radovskyb/watcher"
+	"time"
 )
 
 type Config struct{}
@@ -23,13 +28,61 @@ func Get(key string) string {
 	return ""
 }
 
-func InitConfig(fileName string) error {
+func Is(key string) bool {
+	if val, ok := ParsedConfig.Configs[key]; ok {
+		return val.(bool)
+	}
+
+	return false
+}
+
+func readFile(fileName string) []byte {
 	FileName = fileName
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		fmt.Println(fileName)
 		log.Fatal(err)
 	}
+
+	return content
+}
+
+func startWatcher(fileName string) {
+	w := watcher.New()
+	w.SetMaxEvents(1)
+
+	w.FilterOps(watcher.Write)
+
+	go func() {
+		for {
+			select {
+			case <-w.Event:
+				l.Log.Info("Config File Changed")
+				parseConfig(readFile(fileName))
+			case err := <-w.Error:
+				l.Log.Error(err.Error())
+			case <-w.Closed:
+				return
+			}
+		}
+	}()
+
+	// Watch this folder for changes.
+	if err := w.Add(fileName); err != nil {
+		log.Fatalln(err)
+	}
+
+	// Start the watching process - it'll check for changes every 100ms.
+	go func() {
+		if err := w.Start(time.Millisecond * 100); err != nil {
+			l.Log.Error(err.Error())
+		}
+	}()
+}
+
+func InitConfig(fileName string) error {
+	content := readFile(fileName)
+	startWatcher(fileName)
 
 	return parseConfig(content)
 }
@@ -49,6 +102,11 @@ func toJSON() []byte {
 	return b
 }
 
+func SetDdns(ddns models.Ddns) error {
+	ParsedConfig.Ddns = ddns
+	return saveConfig()
+}
+
 func AddCommand(command models.Command) error {
 	ParsedConfig.Commands = append(ParsedConfig.Commands, command)
 	return saveConfig()
@@ -56,14 +114,12 @@ func AddCommand(command models.Command) error {
 
 func AddDevice(device models.Device) error {
 	ParsedConfig.Devices = append(ParsedConfig.Devices, device)
-	generateParsedDevices()
 
 	return saveConfig()
 }
 
 func AddAction(action models.Action) error {
 	ParsedConfig.Actions = append(ParsedConfig.Actions, action)
-	generateParsedActions()
 
 	return saveConfig()
 }
@@ -115,6 +171,26 @@ func GetCommandsByDeviceName(deviceName string) []models.Command {
 	return commands
 }
 
+func GetDdns() models.Ddns {
+	return ParsedConfig.Ddns
+}
+
+func GetVoice() *models.Voice {
+	return &ParsedConfig.Voice
+}
+
+func GetHTTP() *models.HTTP {
+	return &ParsedConfig.HTTP
+}
+
+func GetWebSocket() *models.WebSocket {
+	return &ParsedConfig.WebSocket
+}
+
+func GetTelegram() *models.Telegram {
+	return &ParsedConfig.Telegram
+}
+
 func GetAvailablePlugins() []models.Plugin {
 	plugins := []models.Plugin{}
 	mappedPlugins := map[string]*models.Plugin{}
@@ -137,6 +213,7 @@ func GetAvailablePlugins() []models.Plugin {
 
 	return plugins
 }
+
 func GetDevice(deviceName string) (models.Device, error) {
 	device := models.Device{}
 	if device, ok := ParsedConfig.NamedDevices[deviceName]; ok {
@@ -148,11 +225,22 @@ func GetDevice(deviceName string) (models.Device, error) {
 
 func GetAction(actionName string) (models.Action, error) {
 	action := models.Action{}
+
 	if action, ok := ParsedConfig.NamedActions[actionName]; ok {
 		return action, nil
 	}
 
 	return action, fmt.Errorf("Action \"%s\" not found", actionName)
+}
+
+func GetReading(readingName string) (models.Reading, error) {
+	reading := models.Reading{}
+
+	if reading, ok := ParsedConfig.NamedReadings[readingName]; ok {
+		return reading, nil
+	}
+
+	return reading, fmt.Errorf("Reading \"%s\" not found", readingName)
 }
 
 func GetDeviceInterface(deviceName string, interfaceName string) (models.DeviceInterface, error) {
@@ -195,14 +283,29 @@ func generateParsedActions() {
 	}
 }
 
-func parseConfig(input []byte) error {
+func generateParsedReadings() {
+	ParsedConfig.NamedReadings = map[string]models.Reading{}
 
+	if len(ParsedConfig.Readings) > 0 {
+		for _, reading := range ParsedConfig.Readings {
+			ParsedConfig.NamedReadings[reading.Name] = reading
+		}
+	}
+}
+
+func parseConfig(input []byte) error {
+	l.Log.Debug("Parsing Config")
+	ParsedConfig = models.Config{}
+	if err := defaults.Set(&ParsedConfig); err != nil {
+		return err
+	}
 	if err := json.Unmarshal(input, &ParsedConfig); err != nil {
 		return err
 	}
-
+	fmt.Printf("%+v\n", ParsedConfig)
 	generateParsedDevices()
 	generateParsedActions()
+	generateParsedReadings()
 
 	return nil
 }

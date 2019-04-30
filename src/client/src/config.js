@@ -1,4 +1,4 @@
 export default {
-  frankServerApi: 'http://localhost:8080',
-  frankServerScoket: 'http://localhost:5000'
+  frankServerApi: "https://b2b17e70.ngrok.io",
+  frankServerScoket: "https://79a005eb.ngrok.io"
 };
